@@ -6,6 +6,7 @@ import cv2
 import mediapipe as mp
 import time
 import os
+import numpy as np
 import keyboard
 from mediapipe.framework.formats import landmark_pb2
 
@@ -67,39 +68,39 @@ with mp_pose.Pose(
     )
 
     # draw a line that connects the landmarks together
-    # poses = landmark_subset.landmark
-    # for i in range(0, len(poses) - 1, 2):
-    #     start_idx = [
-    #         poses[i].x,
-    #         poses[i].y
-    #     ]
-    #     end_idx = [
-    #         poses[i + 1].x,
-    #         poses[i + 1].y
-    #     ]
-    #     # IMG_HEIGHT, IMG_WIDTH = image.shape[:2]
-    #     # print(start_idx)
-    #
-    #     cv2.line(image,
-    #              # here we change coordinates to fit to the camera feed
-    #              tuple(np.multiply(start_idx[:2], [
-    #                  IMG_WIDTH, IMG_HEIGHT]).astype(int)),
-    #              tuple(np.multiply(end_idx[:2], [
-    #                  IMG_WIDTH, IMG_HEIGHT]).astype(int)),
-    #              (255, 0, 0), 9)
-    #
-    #     a = tuple(np.multiply(start_idx[:2], [IMG_WIDTH, IMG_HEIGHT]).astype(int))
-    #     b = tuple(np.multiply(end_idx[:2], [IMG_WIDTH, IMG_HEIGHT]).astype(int))
-    #
-    #     # length in pixels? or numpy stuff
-    #     ans = "x:", abs(a[0] - b[0]), "y:", abs(a[1] - b[1])
-    #     #print(ans)
+    poses = landmark_subset.landmark
+    for i in range(0, len(poses) - 1, 2):
+      start_idx = [
+        poses[i].x,
+        poses[i].y
+      ]
+      end_idx = [
+        poses[i + 1].x,
+        poses[i + 1].y
+      ]
+      # IMG_HEIGHT, IMG_WIDTH = image.shape[:2]
+      # print(start_idx)
+
+      cv2.line(image,
+               # here we change coordinates to fit to the camera feed
+               tuple(np.multiply(start_idx[:2], [
+                 IMG_WIDTH, IMG_HEIGHT]).astype(int)),
+               tuple(np.multiply(end_idx[:2], [
+                 IMG_WIDTH, IMG_HEIGHT]).astype(int)),
+               (255, 0, 0), 9)
+
+      a = tuple(np.multiply(start_idx[:2], [IMG_WIDTH, IMG_HEIGHT]).astype(int))
+      b = tuple(np.multiply(end_idx[:2], [IMG_WIDTH, IMG_HEIGHT]).astype(int))
+
+      # length in pixels? or numpy stuff
+      ans = "x:", abs(a[0] - b[0]), "y:", abs(a[1] - b[1])
+      # print(ans)
 
     # printing stuff to the screen
     currTime = time.time()
     fps = 1 / (currTime - prevTime)
     prevTime = currTime
-    cv2.putText(image, f'FPS: {int(fps)}', (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 196, 255), 2)
+    cv2.putText(image, f'Ans: {ans}', (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 196, 255), 2)
 
     # pause the program
     if keyboard.is_pressed('p'):
@@ -111,13 +112,14 @@ with mp_pose.Pose(
 
     # list of landmarks
     # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker#get_started
-    # get the legs
+    # get the legs and the head
     # get the heels
     landmark_subset = landmark_pb2.NormalizedLandmarkList(
       landmark=[
-        results.pose_landmarks.landmark[30],  # 29 right leg
-        results.pose_landmarks.landmark[32]  # 30 left leg
-        # results.pose_landmarks.landmark[31],
+        results.pose_landmarks.landmark[0],
+        results.pose_landmarks.landmark[29],  # 29 right leg
+        results.pose_landmarks.landmark[30],  # 30 left leg
+        # results.pose_landmarks.landmark[25],
         # results.pose_landmarks.landmark[26],
       ]
     )
