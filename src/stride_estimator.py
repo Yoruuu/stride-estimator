@@ -2,6 +2,8 @@
 #Modified by Augmented Startups 2021
 #Pose-Estimation in 5 Minutes
 #Watch 5 Minute Tutorial at www.augmentedstartups.info/YouTube
+import math
+
 import cv2
 import mediapipe as mp
 import time
@@ -13,6 +15,11 @@ from mediapipe.framework.formats import landmark_pb2
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 mp_holistic = mp.solutions.holistic
+
+maxX = 0
+maxY = 0
+
+initial_height = 0
 
 # # For static images:
 # with mp_pose.Pose(
@@ -100,7 +107,26 @@ with mp_pose.Pose(
     currTime = time.time()
     fps = 1 / (currTime - prevTime)
     prevTime = currTime
-    cv2.putText(image, f'Ans: {ans}', (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 196, 255), 2)
+
+    # printing out the height and step length according to the pose estimation in pixels
+    head = results.pose_landmarks.landmark[0].y * IMG_HEIGHT
+    left_heelX = results.pose_landmarks.landmark[29].x * IMG_WIDTH
+    left_heelY = results.pose_landmarks.landmark[29].y * IMG_HEIGHT
+    right_heelX = results.pose_landmarks.landmark[30].x * IMG_WIDTH
+    right_heelY = results.pose_landmarks.landmark[30].y * IMG_HEIGHT
+
+    # head and right heel for now
+    subject_height = math.floor(abs(head - left_heelY))
+
+    if subject_height > initial_height:
+      initial_height = subject_height
+      print(f'Initial height: {subject_height}')
+      print(f'Image dimensions: {IMG_HEIGHT}, {IMG_WIDTH}')
+
+    # height in terms of
+    cv2.putText(image,
+                f'Person Height: {initial_height}, StepX: {math.floor(abs(left_heelX - right_heelX))}cm',
+                (20, 70), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 0), 2)
 
     # pause the program
     if keyboard.is_pressed('p'):
