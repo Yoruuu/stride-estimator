@@ -14,47 +14,45 @@ mp_pose = mp.solutions.pose
 mp_holistic = mp.solutions.holistic
 
 
-def main():
-    maxX = 0
-    maxY = 0
+def main(file):
 
-    leftHeelInitial = 0
-    leftHeelPrevious = 0
-    rightHeelInitial = 0
-    rightHeelPrevious = 0
+    left_heel_previous = 0
+    right_heel_previous = 0
 
+    first_step = False
+    to_left = False
+    to_right = False
+    left_in_front = False
 
-    firstStep = False
-    toLeft = False
-    toRight = False
-    leftInFront = False
+    initial_setup = False
+    max_step_x = 0
 
-    initialSetup = False
-    maxStepX = 0
+    left_stride = 0
+    right_stride = 0
 
-    leftStride = 0
-    rightStride = 0
-
-    decreasing = False
-    reset = False
-
-    shift = False
-    count = 0
-
-
-    counter = 0
+    left_stride_array = []
+    right_stride_array = []
 
     # For webcam input:
     # cap = cv2.VideoCapture(0)
     # cap = cv2.VideoCapture("vid2.mp4")
-    cap = cv2.VideoCapture("../data/11_110_1_flipped.mp4")
+
+    if file == "":
+        cap = cv2.VideoCapture("../data/11_110_1.mp4")
+    else:
+        cap = cv2.VideoCapture(file)
     # For Video input:
     prevTime = 0
 
-
     frame_counter = 0
     shoe_pixel_calibrator = 1
-    ##Uncomment later
+
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    writer = cv2.VideoWriter("res.mp4", cv2.VideoWriter.fourcc(*'DIVX'), 20, (width, height))
+
+    # Uncomment later
     initial_shoe_pixel_size = 1
     # while True:
     #     shoe_size = input("What is your shoe size in cm? ")
@@ -63,12 +61,6 @@ def main():
     #     print("Non int value detected\n")
     shoe_size = 23
 
-    # sr = cv2.dnn_superres.DnnSuperResImpl()
-    # path = "EDSR_x3.pb"
-    # sr.readModel(path)
-    # sr.setModel("edsr", 3)
-
-    # need m and f?
 
     with (mp_pose.Pose(
             min_detection_confidence=0.5,
@@ -79,8 +71,6 @@ def main():
                 print("Ignoring empty camera frame.")
                 # If loading a video, use 'break' instead of 'continue'.
                 break
-
-            # image = sr.upsample(image)
 
             # Convert the BGR image to RGB.
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -100,264 +90,332 @@ def main():
             if results.pose_landmarks is None:
                 break
 
-            # get the x and y coordinates of certain landmarks
-            head = results.pose_landmarks.landmark[0].y * IMG_HEIGHT
+            # get the x and y coordinates of the heel and index of both feets
+            left_heel_x = results.pose_landmarks.landmark[29].x * IMG_WIDTH
+            left_heel_y = results.pose_landmarks.landmark[29].y * IMG_HEIGHT
+            left_index_x = results.pose_landmarks.landmark[31].x * IMG_WIDTH
+            left_index_y = results.pose_landmarks.landmark[31].y * IMG_HEIGHT
 
-            left_heelX = results.pose_landmarks.landmark[29].x * IMG_WIDTH
-            left_heelY = results.pose_landmarks.landmark[29].y * IMG_HEIGHT
-            left_indexX = results.pose_landmarks.landmark[31].x * IMG_WIDTH
-            left_indexY = results.pose_landmarks.landmark[31].y * IMG_HEIGHT
+            right_heel_x = results.pose_landmarks.landmark[30].x * IMG_WIDTH
+            right_heel_y = results.pose_landmarks.landmark[30].y * IMG_HEIGHT
+            right_index_x = results.pose_landmarks.landmark[32].x * IMG_WIDTH
+            right_index_y = results.pose_landmarks.landmark[32].y * IMG_HEIGHT
 
-            right_heelX = results.pose_landmarks.landmark[30].x * IMG_WIDTH
-            right_heelY = results.pose_landmarks.landmark[30].y * IMG_HEIGHT
-            right_indexX = results.pose_landmarks.landmark[32].x * IMG_WIDTH
-            right_indexY = results.pose_landmarks.landmark[32].y * IMG_HEIGHT
+            # initial setup for stride estimator
+            if initial_setup is False:
+                initial_setup = True
 
-            #initial setup for stride estimator
-            if initialSetup is False:
-                leftHeelInitial = left_heelX
-                rightHeelInitial = right_heelX
-                initialSetup = True
-
-                #check if they are walking from LTR or RTL
-                #base it on the direction of the heel to index
-                if right_heelX < right_indexX and left_heelX < left_indexX:
+                # check if they are walking from LTR or RTL, based on the position of the heel and index
+                # if facing right
+                if right_heel_x < right_index_x and left_heel_x < left_index_x:
                     print('to right')
-                    toRight = True
-                    if left_indexX < right_indexX:
-                        leftInFront = True
+                    to_right = True
+                    if left_index_x < right_index_x:
+                        left_in_front = True
                     else:
-                        leftInFront = False
-                elif right_heelX > right_indexX and left_heelX > left_indexX:
+                        left_in_front = False
+                # if facing left
+                elif right_heel_x > right_index_x and left_heel_x > left_index_x:
                     print('to left')
-                    toLeft = True
-                    if left_indexX > right_indexX:
-                        leftInFront = True
+                    to_left = True
+                    if left_index_x > right_index_x:
+                        left_in_front = True
                     else:
-                        leftInFront = False
+                        left_in_front = False
+                # if unsure, reconfigure again in the next frame
                 else:
                     print('error')
-                    initialSetup = False
-
-
+                    initial_setup = False
 
             # get the length of the left feet
-            left_feet_length_pixelsX = abs(left_heelX - left_indexX)
-            left_feet_length_pixelsY = abs(left_heelY - left_indexY)
-            left_feet_length_pixels = math.sqrt(pow(left_feet_length_pixelsX, 2) + pow(left_feet_length_pixelsY, 2))
+            left_feet_length_pixels_x = abs(left_heel_x - left_index_x)
+            left_feet_length_pixels_y = abs(left_heel_y - left_index_y)
+            left_feet_length_pixels = math.sqrt(pow(left_feet_length_pixels_x, 2) + pow(left_feet_length_pixels_y, 2))
 
             # get the length of the right feet
-            right_feet_length_pixelsX = abs(right_heelX - right_indexX)
-            right_feet_length_pixelsY = abs(right_heelY - right_indexY)
-            right_feet_length_pixels = math.sqrt(pow(right_feet_length_pixelsX, 2) + pow(right_feet_length_pixelsY, 2))
+            right_feet_length_pixels_x = abs(right_heel_x - right_index_x)
+            right_feet_length_pixels_y = abs(right_heel_y - right_index_y)
+            right_feet_length_pixels = math.sqrt(pow(right_feet_length_pixels_x, 2) + pow(right_feet_length_pixels_y, 2))
 
-            # print(initial_shoe_pixel_size, right_feet_length_pixels, left_feet_length_pixels)
-            # issue: how do we calibrate for a constant feet pixel length
-            # for the first 30 frames, add then average
-            # first 30 coz we assume the person is standing still
-
-            frame_used = 60
-
-            ##set the first size to be the bigger of the 2 feets
+            # set the first size to be the bigger of the 2 feets
             if frame_counter < 1:
                 if right_feet_length_pixels > left_feet_length_pixels:
                     shoe_pixel_calibrator = right_feet_length_pixels
                 else:
                     shoe_pixel_calibrator = left_feet_length_pixels
+                frame_counter += 1
 
+            curr_avg, shoe_pixel_calibrator = callibrate_shoe_pixels(left_feet_length_pixels, right_feet_length_pixels,
+                                                                     shoe_pixel_calibrator)
 
-            # callibration part
-            #
-            avg = (right_feet_length_pixels + left_feet_length_pixels) / 2
-            # if the right foot is too small compared to the left
-            if (right_feet_length_pixels < left_feet_length_pixels - 2):
-                avg = left_feet_length_pixels
-            elif (left_feet_length_pixels < right_feet_length_pixels - 2):
-                avg = right_feet_length_pixels
-            else:
-                avg = (right_feet_length_pixels + left_feet_length_pixels) / 2
-
-            # only allow values near the current average to contribute to the average calculation
-            # constant update rather than initial calibration
-            if avg < shoe_pixel_calibrator + 3 and avg > shoe_pixel_calibrator - 3:
-                shoe_pixel_calibrator += avg
-                shoe_pixel_calibrator /= 2
-
-            # calculate size of feet in pixels and corelate them to irl value
-            feet_width = abs(left_heelX - right_heelX)
-            feet_height = abs(left_heelY - right_heelY)
-            feet_distance = math.floor(
-                math.sqrt((feet_height * feet_height) + (feet_width * feet_width)))
-
-            # calculate the pixel length of the right leg
-            pixel_ratio = int(shoe_size) / shoe_pixel_calibrator
-
-            # predicted distance of the step's x axis in cm
-            predicted_step_x = math.floor(feet_width * pixel_ratio)
-
+            predicted_step_x = estimate_step_length(left_heel_x, left_heel_y, right_heel_x, right_heel_y,
+                                                                shoe_pixel_calibrator, shoe_size)
 
             #update the max step
-            if maxStepX < predicted_step_x:
-                prevStepX = maxStepX
-                maxStepX = predicted_step_x
+            if max_step_x < predicted_step_x:
+                max_step_x = predicted_step_x
 
-            # if the next step has started and the distance between the heels is bigger than the shoe size
-            # next step has started because this means the other not moving leg is stationary, so we can take its value
+            # calculate the stride using the predicted step length calculated above
+            # calculations is done when the subject makes a step, the previous step length of the opposite leg is added
+            # eg: if left steps in front, add the current step length and the recent right step length is added
+            # if walking to the right
+            if to_right is True and to_left is False:
+                # if the next step has started (hence a smaller predicted step) and the distance between the heels is
+                # bigger than the average estimated shoe size
+                if predicted_step_x < max_step_x * 0.8 and abs(left_heel_x - right_heel_x) > shoe_pixel_calibrator:
 
-            if toRight is True and toLeft is False:
+                    first_step, left_heel_previous, left_in_front, right_heel_previous = calculate_stride_to_right(
+                        first_step, left_heel_previous, left_in_front, left_index_x, max_step_x, right_heel_previous,
+                        right_index_x, left_stride_array, right_stride_array)
 
-                if predicted_step_x < maxStepX * 0.8 and abs(left_heelX - right_heelX) > shoe_pixel_calibrator:
-                    #print("moving leg")
+                    max_step_x = 0
+            # if walking to the left
+            elif to_left is True and to_right is False:
+                if predicted_step_x < max_step_x * 0.8 and abs(right_heel_x - left_heel_x) > shoe_pixel_calibrator:
 
-                    if left_indexX > right_indexX and not leftInFront:
-                        print('left in front')
+                    first_step, left_heel_previous, left_in_front, right_heel_previous = calculate_stride_to_left(
+                        first_step, left_heel_previous, left_in_front, left_index_x, max_step_x, right_heel_previous,
+                        right_index_x, left_stride_array, right_stride_array)
 
-                        #if its the first step
-                        if leftHeelPrevious == 0 and not firstStep:
-                            firstStep = True
-                            print('first step')
-                            rightHeelPrevious = maxStepX
-                        else:
-                            #print('not first step', abs(left_heelX - leftHeelPrevious) * pixel_ratio)
-                            print('left stride: ', leftHeelPrevious + maxStepX)
-                            rightHeelPrevious = maxStepX
+                    max_step_x = 0
 
-                        leftInFront = True
-                        # time.sleep(2)
+            # update the stride lengths
+            left_stride = int(left_heel_previous + max_step_x)
+            right_stride = int(right_heel_previous + max_step_x)
 
-                    elif right_indexX > left_indexX and leftInFront:
-                        print('right in front')
+            draw_on_video(image, left_stride, predicted_step_x, results, right_stride)
 
-                        # if its the first step
-                        if rightHeelPrevious == 0 and not firstStep:
-                            firstStep = True
-                            print('first step')
-                            leftHeelPrevious = maxStepX
-                        else:
-                            print('right stride: ', rightHeelPrevious + maxStepX)
-                            leftHeelPrevious = maxStepX
+            # write into video
+            writer.write(image)
 
-                        leftInFront = False
-                        # time.sleep(2)
-
-                    maxStepX = 0
-
-
-            elif toLeft is True and toRight is False:
-
-                if predicted_step_x < maxStepX * 0.8 and abs(right_heelX - left_heelX) > shoe_pixel_calibrator:
-
-                    # if left feet in front of right feet
-                    if left_indexX < right_indexX and not leftInFront:
-                        # print(left_indexX, left_heelX, right_indexX, right_heelX)
-                        print('left feet in front')
-                        #time.sleep(2)
-
-                        # if its the first step
-                        if leftHeelPrevious == 0 and not firstStep:
-                            firstStep = True
-                            print('first step')
-                            rightHeelPrevious = maxStepX
-                        else:
-                            # print('not first step', abs(left_heelX - leftHeelPrevious) * pixel_ratio)
-                            print('left stride: ', leftHeelPrevious + maxStepX)
-                            rightHeelPrevious = maxStepX
-
-                        leftInFront = True
-                        # time.sleep(2)
-
-
-                    # if right feet in front of left feet
-                    elif right_indexX < left_indexX and leftInFront:
-                        print('right feet in front')
-
-                        # if its the first step
-                        if rightHeelPrevious == 0 and not firstStep:
-                            firstStep = True
-                            print('first step')
-                            leftHeelPrevious = maxStepX
-                        else:
-                            print('right stride: ', rightHeelPrevious + maxStepX)
-                            leftHeelPrevious = maxStepX
-
-                        leftInFront = False
-                        # time.sleep(2)
-
-
-                        maxStepX = 0
-
-            leftStride = int(leftHeelPrevious + maxStepX)
-            rightStride = int(rightHeelPrevious + maxStepX)
-
-
-            counter += 1  #interval of 25 first
-
-
-            #######################
-            heel_to_heel = 7
-            # predicted distance of the step from one heel to another
-            # ideal value for c: 40.61cm (1 line), 56.57cm (2 line)
-            predicted_step_pythagorus = math.floor(
-                math.sqrt((feet_width * feet_width) + (heel_to_heel * heel_to_heel)))
-            #######################
-
-            #cv2.putText(image, f'{tv1}  {tv2}', (20, 70), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 0), 2)
-            cv2.putText(image, f'StepX: {predicted_step_x}cm, StepP: {maxStepX}cm , LStride: {leftStride}cm, RStride: {rightStride}cm',
-                        (20, 70), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 255), 2)
-
-
-            # list of landmarks
-            # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker#get_started
-            # get the legs and the head
-            # get the heels
-            landmark_subset = landmark_pb2.NormalizedLandmarkList(
-                landmark=[
-                    ##results.pose_landmarks.landmark[0],
-                    results.pose_landmarks.landmark[29],  # 29 right leg
-                    results.pose_landmarks.landmark[30],
-                    results.pose_landmarks.landmark[31],
-                    results.pose_landmarks.landmark[32]
-                    # results.pose_landmarks.landmark[25],
-                    # results.pose_landmarks.landmark[26],
-                ]
-            )
-
-            # draw the points onto the screen, on top of the line
-            mp_drawing.draw_landmarks(
-                # below code in comment is to draw the entire skeleton model
-                # image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-                image, landmark_list=landmark_subset)
-
-            cv2.imshow('FYP Project', image)
-            if cv2.waitKey(5) & 0xFF == ord('q'):
-                break
+            # cv2.imshow('FYP Project', image)
+            # if cv2.waitKey(5) & 0xFF == ord('q'):
+            #     break
 
             # pause the program
-            if keyboard.is_pressed('p'): # or isAStep(left_heelY, right_heelY, predicted_step_x):
-                # print(left_heelY, right_heelY)
-                #time.sleep(1.5)
-                loop = True
-                while loop is True:
-                    if keyboard.is_pressed('o'):
-                        loop = False
+            pause_program()
 
     cap.release()
+    writer.release()
 
+    print(left_stride_array)
+    print(right_stride_array)
+
+
+def pause_program():
+    """
+    A function to pause the program
+
+    :return:
+    """
+    if keyboard.is_pressed('p'):  # or isAStep(left_heel_y, right_heel_y, predicted_step_x):
+        # print(left_heel_y, right_heel_y)
+        time.sleep(1.5)
+        # loop = True
+        # while loop is True:
+        #     if keyboard.is_pressed('o'):
+        #         loop = False
+
+
+def draw_on_video(image, left_stride, predicted_step_x, results, right_stride):
+    """
+    A function containing code to draw onto the video
+
+    :param image: the image to draw onto
+    :param left_stride: int, the value of the left stride
+    :param predicted_step_x: int, the current step value
+    :param results: object, holds the values of the pose estimation model predicted from the current frame
+    :param right_stride: int, the value of the right stride
+    :return:
+    """
+    # write the lengths onto the video
+    cv2.putText(image,
+                f'StepX: {predicted_step_x}cm, LStride: {left_stride}cm, RStride: {right_stride}cm',
+                (20, 70), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 255), 2)
+
+    # draw the dots of the legs onto the video
+    landmark_subset = landmark_pb2.NormalizedLandmarkList(
+        landmark=[
+            results.pose_landmarks.landmark[29],  # right heel
+            results.pose_landmarks.landmark[30],  # left heel
+            results.pose_landmarks.landmark[31],  # right foot index
+            results.pose_landmarks.landmark[32]  # left foot index
+        ]
+    )
+    # draw the points onto the screen, on top of the line
+    mp_drawing.draw_landmarks(
+        # below code in comment is to draw the entire skeleton model
+        # image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+        image, landmark_list=landmark_subset)
+
+
+def calculate_stride_to_left(first_step, left_heel_previous, left_in_front, left_index_x, max_step_x,
+                             right_heel_previous, right_index_x, left_stride_array, right_stride_array):
+    """
+    Calculates the stride when walking to the left
+
+    :param first_step: boolean
+    :param left_heel_previous: int, the max distance of the previous step
+    :param left_in_front: boolean
+    :param left_index_x: int, the x coordinate of the left index
+    :param max_step_x: int, the max step length of the most recent step
+    :param right_heel_previous: int, the max distance of the previous step
+    :param right_index_x: int, the x coordinate of the left index
+    :return:
+    """
+
+    # if left feet in front of right feet
+    if left_index_x < right_index_x and not left_in_front:
+        # if it's the first step
+        if left_heel_previous == 0 and not first_step:
+            first_step = True
+        else:
+            right_heel_previous = max_step_x
+
+        left_in_front = True
+        ####
+        print(int(right_heel_previous + max_step_x), "left stride")
+        left_stride_array.append(int(right_heel_previous + max_step_x))
+
+        #time.sleep(2)
+
+
+    # if right feet in front of left feet
+    elif right_index_x < left_index_x and left_in_front:
+        # if it's the first step
+        if right_heel_previous == 0 and not first_step:
+            first_step = True
+        else:
+            left_heel_previous = max_step_x
+
+        left_in_front = False
+        ####
+        print(int(left_heel_previous + max_step_x), "right stride")
+        right_stride_array.append(int(left_heel_previous + max_step_x))
+
+        #time.sleep(2)
+
+    return first_step, left_heel_previous, left_in_front, right_heel_previous
+
+
+def calculate_stride_to_right(first_step, left_heel_previous, left_in_front, left_index_x, max_step_x,
+                              right_heel_previous, right_index_x, left_stride_array, right_stride_array):
+    """
+    Calculates the stride when walking to the right
+
+    :param first_step: boolean
+    :param left_heel_previous: int, the max distance of the previous step
+    :param left_in_front: boolean
+    :param left_index_x: int, the x coordinate of the left index
+    :param max_step_x: int, the max step length of the most recent step
+    :param right_heel_previous: int, the max distance of the previous step
+    :param right_index_x: int, the x coordinate of the left index
+    :return:
+    """
+
+    # if left leg is in front
+    if left_index_x > right_index_x and not left_in_front:
+        # if it's the first step
+        if left_heel_previous == 0 and not first_step:
+            first_step = True
+        else:
+            right_heel_previous = max_step_x
+
+        left_in_front = True
+        ####
+        print(int(right_heel_previous + max_step_x), "left stride")
+        left_stride_array.append(int(right_heel_previous + max_step_x))
+
+        #time.sleep(2)
+
+    # if right leg is in front
+    elif right_index_x > left_index_x and left_in_front:
+        # if it's the first step
+        if right_heel_previous == 0 and not first_step:
+            first_step = True
+        else:
+            left_heel_previous = max_step_x
+
+        left_in_front = False
+        ####
+        print(int(left_heel_previous + max_step_x), "right stride")
+        right_stride_array.append(int(left_heel_previous + max_step_x))
+
+        #time.sleep(2)
+
+    return first_step, left_heel_previous, left_in_front, right_heel_previous
+
+
+def estimate_step_length(left_heel_x, left_heel_y, right_heel_x, right_heel_y, shoe_pixel_calibrator, shoe_size):
+    '''
+    Estimates the step length of the subject
+
+    :param left_heel_x: x coordinate of the left heel
+    :param left_heel_y: y coordinate of the left heel
+    :param right_heel_x: x coordinate of the right heel
+    :param right_heel_y: y coordinate of the right heel
+    :param shoe_pixel_calibrator: the current average shoe pixel value
+    :param shoe_size: the real length of the subject's shoe
+    :return: feet_width: the length of the feet in pixels, predicted_step_x: the estimated step length
+    '''
+    # calculate size of feet in pixels and correlate them to irl value
+    feet_width = abs(left_heel_x - right_heel_x)
+    feet_height = abs(left_heel_y - right_heel_y)
+    feet_distance = math.floor(
+        math.sqrt((feet_height * feet_height) + (feet_width * feet_width)))
+
+    # calculate the pixel length of the right leg
+    pixel_ratio = int(shoe_size) / shoe_pixel_calibrator
+
+    # predicted distance of the step's x axis in cm
+    predicted_step_x = math.floor(feet_width * pixel_ratio)
+
+    return predicted_step_x
+
+
+def callibrate_shoe_pixels(left_feet_length_pixels, right_feet_length_pixels, shoe_pixel_calibrator):
+    """
+    A function to callibrate the feet pixels through taking either average or the bigger of the two feets.
+    Bigger is preferred because during tests, the model can misinterpret part of the shoe as the ground due to bad
+    lighting
+
+    :param left_feet_length_pixels: float, the left feet length in pixels
+    :param right_feet_length_pixels: float, the right feet length in pixels
+    :param shoe_pixel_calibrator: float, the current average shoe feet length
+    :return:
+    """
+    curr_avg = (right_feet_length_pixels + left_feet_length_pixels) / 2
+
+    # if the right foot is too small compared to the left
+    if right_feet_length_pixels < left_feet_length_pixels - 2:
+        curr_avg = left_feet_length_pixels
+    # if left feet is too small
+    elif left_feet_length_pixels < right_feet_length_pixels - 2:
+        curr_avg = right_feet_length_pixels
+    # if neither, use the average value
+
+    # this part prevents outlier values (most of the time are incorrect predictions from the model)
+    # from being added to the average
+    # make sure the curr_avg is within a 20% range of the shoe_pixel_calibrator, which is the average
+    if curr_avg < shoe_pixel_calibrator * 1.2 < curr_avg:
+        shoe_pixel_calibrator += curr_avg
+        shoe_pixel_calibrator /= 2
+
+    return curr_avg, shoe_pixel_calibrator
 
 def isAStep(leftHeelY, rightHeelY, predictedStep):
+    """
+    Test function, probably delete later
+
+    :param leftHeelY:
+    :param rightHeelY:
+    :param predictedStep:
+    :return:
+    """
     if abs(leftHeelY - rightHeelY) <= 10 and predictedStep == 40:
         return True
+
     return False
 
-
-# Learn more AI in Computer Vision by Enrolling in our AI_CV Nano Degree:
-# https://bit.ly/AugmentedAICVPRO
-
-# Created by MediaPipe
-# Modified by Augmented Startups 2021
-# Pose-Estimation in 5 Minutes
-# Watch 5 Minute Tutorial at www.augmentedstartups.info/YouTube
-# https://www.augmentedstartups.com/Pose-Estimation
-
 if __name__ == "__main__":
-    main()
+    main("")
