@@ -1,81 +1,115 @@
-# # Import required Libraries
-# from tkinter import *
-# from PIL import Image, ImageTk
-# import cv2
+import customtkinter
+from tkVideoPlayer import TkinterVideo
+from stride_estimator import main
 
-# # Create an instance of TKinter Window or frame
-# win= Tk()
+customtkinter.set_appearance_mode("dark")
+customtkinter.set_default_color_theme("dark-blue")
 
-# # Set the size of the window
-# win.geometry("700x350")# Create a Label to capture the Video frames
-# label =Label(win)
-# label.grid(row=0, column=0)
-# cap= cv2.VideoCapture(0)
+root = customtkinter.CTk()
+root.title("fyp")
+root.geometry("500x250")
+root.grid_columnconfigure(0, weight=3)
+root.grid_columnconfigure(1, weight=1)
 
-# # Define function to show frame
-# def show_frames():
-#    # Get the latest frame and convert into Image
-#    cv2image= cv2.cvtColor(cap.read()[1],cv2.COLOR_BGR2RGB)
-#    img = Image.fromarray(cv2image)
+# video frame
+video_frame = customtkinter.CTkFrame(master=root)
+video_frame.pack(pady=20, padx=80, fill="both", expand=True, side=customtkinter.LEFT)
 
-#    # Convert image to PhotoImage
-#    imgtk = ImageTk.PhotoImage(image = img)
-#    label.imgtk = imgtk
-#    label.configure(image=imgtk)
+video = TkinterVideo(master=video_frame, scaled=True)
+playing = False
 
-# # Repeat after an interval to capture continiously
-# label.after(20, show_frames)
-
-# show_frames()
-# win.mainloop()
-
-import stride_estimator as stride
-
-import tkinter as tk
-from PIL import Image, ImageTk
-import cv2
-
-import mediapipe as mp
+video_label = customtkinter.CTkLabel(master=video_frame, text="Video", anchor="w")
+video_label.pack(pady=12, padx=10)
 
 
-mp_drawing = mp.solutions.drawing_utils
-mp_pose = mp.solutions.pose
-mp_holistic = mp.solutions.holistic
+def browsefile():
+    video.stop()
+    filename = customtkinter.filedialog.askopenfilename(initialdir="/",
+                                                        title="Select a File",
+                                                        filetypes=(("Text files",
+                                                                    "*.mp4*"),
+                                                                   ("all files",
+                                                                    "*.*")))
 
-class MainWindow():
-    def __init__(self, window, cap):
-        self.count = 0
+    # Change label contents
+    video_label.configure(text="File Opened: " + filename)
+    # video = TkinterVideo(master=video_frame, scaled=True)
+    # if playing:
+    #     video.bind('<<Loaded>>', stopvideo)
+    #     video.load("vid1.mp4")
+    # get the shoe size
+    shoe_size = popup_shoesize()
 
-        self.window = window
-        self.cap = cap
-        self.width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        self.interval = 33 # Interval in ms to get the latest frame
+    # preprocess the vid
+    print(filename, shoe_size)
+    main(filename, shoe_size)
 
-        # Create canvas for image
-        self.canvas = tk.Canvas(self.window, width=self.width, height=self.height)
-        self.canvas.grid(row=0, column=0)
-
-        # Update image on canvas
-        self.update_image()
-
-    def update_image(self):
-        # Get the latest frame and convert image format
-        self.image = cv2.cvtColor(self.cap.read()[1], cv2.COLOR_BGR2RGB) # to RGB
-        self.image = Image.fromarray(self.image) # to PIL format
-        self.image = ImageTk.PhotoImage(self.image) # to ImageTk format
-
-        # Update image
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image)
-
-        # Repeat every 'interval' ms
-        self.window.after(self.interval, self.update_image)
+    # play the result
+    playvideo()
 
 
+browsefile_button = customtkinter.CTkButton(video_frame, text="Browse Files", command=browsefile)
+browsefile_button.pack(pady=12, padx=10)
 
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    stride.main("../data/12_95_1.mp4")
-    MainWindow(root, cv2.VideoCapture("res.mp4"))
-    root.mainloop()
+def popup_shoesize():
+
+    shoesize_inputbox = customtkinter.CTkInputDialog(title="Shoe Size",
+                                                     text="Please enter your shoe size in centimetres")
+    # shoesize_inputbox.place(relx=0.5, rely=0.5, anchor='n')
+    # print("Shoe Size:", shoesize_inputbox.get_input())
+    res = shoesize_inputbox.get_input()
+    return res
+
+
+# occupied = False
+def playvideo():
+    # if playing:
+    #     video.stop()
+    # print("heyyy")
+
+    # video = TkinterVideo(master=video_frame, scaled=True)
+    video.load("res.mp4")
+    video.pack(expand=True, fill="both")
+    video.play()
+    # video.bind('<<Ended>>', loopVideo)
+    # video.config
+    playing = True
+
+
+# side frame
+side_frame = customtkinter.CTkFrame(master=root)
+side_frame.pack(pady=20, padx=20, fill="both", expand=True)
+
+def pause():
+    video.pause()
+
+
+def play():
+    video.play()
+
+
+def replay():
+    video.stop()
+    video.after(100, video.play)
+
+
+play_button = customtkinter.CTkButton(master=side_frame, text="Play", width=80, command=play)
+play_button.pack(pady=12, padx=10)
+pause_button = customtkinter.CTkButton(master=side_frame, text="Pause", width=80, command=pause)
+pause_button.pack(pady=12, padx=10)
+replay_button = customtkinter.CTkButton(master=side_frame, text="Replay", width=80, command=replay)
+replay_button.pack(pady=12, padx=10)
+
+
+def change_appearance_mode_event(new_appearance_mode: str):
+    customtkinter.set_appearance_mode(new_appearance_mode)
+
+
+appearance_mode_optionemenu = customtkinter.CTkOptionMenu(side_frame, values=["Dark", "Light", "System"],
+                                                          command=change_appearance_mode_event)
+appearance_mode_optionemenu.pack(pady=12, padx=10, side=customtkinter.BOTTOM)
+appearance_mode_label = customtkinter.CTkLabel(side_frame, text="Appearance Mode:")
+appearance_mode_label.pack(pady=5, padx=10, side=customtkinter.BOTTOM)
+
+root.mainloop()

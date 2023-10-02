@@ -14,7 +14,7 @@ mp_pose = mp.solutions.pose
 mp_holistic = mp.solutions.holistic
 
 
-def main(file):
+def main(file, shoe_size = 0):
 
     left_heel_previous = 0
     right_heel_previous = 0
@@ -59,7 +59,10 @@ def main(file):
     #     if shoe_size.isdigit() is True:
     #         break
     #     print("Non int value detected\n")
-    shoe_size = 23
+
+    # for testing, remove later
+    if shoe_size == 0:
+        shoe_size = 23
 
 
     with (mp_pose.Pose(
@@ -418,4 +421,5 @@ def isAStep(leftHeelY, rightHeelY, predictedStep):
     return False
 
 if __name__ == "__main__":
-    main("")
+    main("C:/Users/asus/Downloads/Monash/Y3S2/FIT3162/git/data/11_110_1.mp4")
+    pass
