@@ -421,5 +421,5 @@ def isAStep(leftHeelY, rightHeelY, predictedStep):
     return False
 
 if __name__ == "__main__":
-    main("C:/Users/asus/Downloads/Monash/Y3S2/FIT3162/git/data/11_110_1.mp4")
+    main("")
     pass
