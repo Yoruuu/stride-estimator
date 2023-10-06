@@ -7,7 +7,7 @@ customtkinter.set_default_color_theme("dark-blue")
 
 root = customtkinter.CTk()
 root.title("fyp")
-root.geometry("500x250")
+root.geometry("1920x1080")
 root.grid_columnconfigure(0, weight=3)
 root.grid_columnconfigure(1, weight=1)
 
@@ -27,7 +27,7 @@ def browsefile():
     filename = customtkinter.filedialog.askopenfilename(initialdir="/",
                                                         title="Select a File",
                                                         filetypes=(("Text files",
-                                                                    "*.mp4*"),
+                                                                    "*.mov *.mp4"),
                                                                    ("all files",
                                                                     "*.*")))
 
@@ -40,9 +40,13 @@ def browsefile():
     # get the shoe size
     shoe_size = popup_shoesize()
 
+    ##call loading screen here
+
     # preprocess the vid
     print(filename, shoe_size)
     main(filename, shoe_size)
+
+    ##remove loading screen here
 
     # play the result
     playvideo()

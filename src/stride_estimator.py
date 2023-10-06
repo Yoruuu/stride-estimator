@@ -232,9 +232,20 @@ def draw_on_video(image, left_stride, predicted_step_x, results, right_stride):
     :return:
     """
     # write the lengths onto the video
+    height, width = image.shape[:2]
+
+    x_pos, y_pos = 0, 80
+    print(height, type(height))
+    print(y_pos)
+
+    # Create a black rectangle to serve as the background
+    background_color = (0, 0, 0)  # Black color
+    text_bg_height = 80  # Adjust the height of the background as needed
+    image[y_pos - text_bg_height:y_pos, x_pos:x_pos + width] = background_color
+
     cv2.putText(image,
                 f'StepX: {predicted_step_x}cm, LStride: {left_stride}cm, RStride: {right_stride}cm',
-                (20, 70), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 255), 2)
+                (x_pos+20, y_pos-10), cv2.FONT_HERSHEY_PLAIN, width // 400, (0, 255, 255), 2)
 
     # draw the dots of the legs onto the video
     landmark_subset = landmark_pb2.NormalizedLandmarkList(
