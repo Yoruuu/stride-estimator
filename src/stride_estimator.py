@@ -235,17 +235,19 @@ def draw_on_video(image, left_stride, predicted_step_x, results, right_stride):
     height, width = image.shape[:2]
 
     x_pos, y_pos = 0, 80
-    print(height, type(height))
-    print(y_pos)
+    # print(height, type(height))
+    # print(y_pos)
 
     # Create a black rectangle to serve as the background
     background_color = (0, 0, 0)  # Black color
     text_bg_height = 80  # Adjust the height of the background as needed
-    image[y_pos - text_bg_height:y_pos, x_pos:x_pos + width] = background_color
+    image[0: int(height * 0.1), x_pos:x_pos + width] = background_color
+
+    # cv2.rectangle(image, (0,0), (x_pos+20, width), (0,0,0), 2)
 
     cv2.putText(image,
                 f'StepX: {predicted_step_x}cm, LStride: {left_stride}cm, RStride: {right_stride}cm',
-                (x_pos+20, y_pos-10), cv2.FONT_HERSHEY_PLAIN, width // 400, (0, 255, 255), 2)
+                (0, int(height * 0.05)), cv2.FONT_HERSHEY_PLAIN, width // 400, (0, 255, 255), 2)
 
     # draw the dots of the legs onto the video
     landmark_subset = landmark_pb2.NormalizedLandmarkList(
