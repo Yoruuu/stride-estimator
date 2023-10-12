@@ -68,6 +68,7 @@ def main(file, shoe_size = 0):
     with (mp_pose.Pose(
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5) as pose):
+
         while cap.isOpened():
             success, image = cap.read()
             if not success:
@@ -89,9 +90,10 @@ def main(file, shoe_size = 0):
             # get the size of the image
             IMG_HEIGHT, IMG_WIDTH = image.shape[:2]
 
-            # get out of the loop if there are no landmarks detected
+            # continue if landmark not detected
             if results.pose_landmarks is None:
-                break
+                continue
+
 
             # get the x and y coordinates of the heel and index of both feets
             left_heel_x = results.pose_landmarks.landmark[29].x * IMG_WIDTH
@@ -103,6 +105,8 @@ def main(file, shoe_size = 0):
             right_heel_y = results.pose_landmarks.landmark[30].y * IMG_HEIGHT
             right_index_x = results.pose_landmarks.landmark[32].x * IMG_WIDTH
             right_index_y = results.pose_landmarks.landmark[32].y * IMG_HEIGHT
+
+            #print("leftheelx: ", left_heel_x, "rightheelx: ", right_heel_x)
 
             # initial setup for stride estimator
             if initial_setup is False:
@@ -201,8 +205,8 @@ def main(file, shoe_size = 0):
     cap.release()
     writer.release()
 
-    print(left_stride_array)
-    print(right_stride_array)
+    # print(left_stride_array)
+    # print(right_stride_array)
 
 
 def pause_program():

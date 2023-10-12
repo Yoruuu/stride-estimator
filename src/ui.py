@@ -33,23 +33,30 @@ def browsefile():
 
     # Change label contents
     video_label.configure(text="File Opened: " + filename)
-    # video = TkinterVideo(master=video_frame, scaled=True)
-    # if playing:
-    #     video.bind('<<Loaded>>', stopvideo)
-    #     video.load("vid1.mp4")
-    # get the shoe size
-    shoe_size = popup_shoesize()
 
-    ##call loading screen here
+    print(filename, type(filename))
 
-    # preprocess the vid
-    print(filename, shoe_size)
-    main(filename, shoe_size)
+    if filename == "":
+        print("None detected")
+    else:
+        print("something detected")
+        # video = TkinterVideo(master=video_frame, scaled=True)
+        # if playing:
+        #     video.bind('<<Loaded>>', stopvideo)
+        #     video.load("vid1.mp4")
+        # get the shoe size
+        shoe_size = popup_shoesize()
 
-    ##remove loading screen here
+        ##call loading screen here
 
-    # play the result
-    playvideo()
+        # preprocess the vid
+        print(filename, shoe_size)
+        main(filename, shoe_size)
+
+        ##remove loading screen here
+
+        # play the result
+        playvideo()
 
 
 browsefile_button = customtkinter.CTkButton(video_frame, text="Browse Files", command=browsefile)
