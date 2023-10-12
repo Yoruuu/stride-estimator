@@ -30,6 +30,8 @@ def main(file, shoe_size = 0):
     left_stride = 0
     right_stride = 0
 
+    left_step_array = []
+    right_step_array = []
     left_stride_array = []
     right_stride_array = []
 
@@ -162,6 +164,8 @@ def main(file, shoe_size = 0):
             if max_step_x < predicted_step_x:
                 max_step_x = predicted_step_x
 
+
+
             # calculate the stride using the predicted step length calculated above
             # calculations is done when the subject makes a step, the previous step length of the opposite leg is added
             # eg: if left steps in front, add the current step length and the recent right step length is added
@@ -171,6 +175,12 @@ def main(file, shoe_size = 0):
                 # bigger than the average estimated shoe size
                 if predicted_step_x < max_step_x * 0.8 and abs(left_heel_x - right_heel_x) > shoe_pixel_calibrator:
 
+                    if left_in_front:
+                        left_step_array.append(max_step_x)
+                    else:
+                        right_step_array.append(max_step_x)
+
+
                     first_step, left_heel_previous, left_in_front, right_heel_previous = calculate_stride_to_right(
                         first_step, left_heel_previous, left_in_front, left_index_x, max_step_x, right_heel_previous,
                         right_index_x, left_stride_array, right_stride_array)
@@ -179,6 +189,11 @@ def main(file, shoe_size = 0):
             # if walking to the left
             elif to_left is True and to_right is False:
                 if predicted_step_x < max_step_x * 0.8 and abs(right_heel_x - left_heel_x) > shoe_pixel_calibrator:
+
+                    if left_in_front:
+                        left_step_array.append(max_step_x)
+                    else:
+                        right_step_array.append(max_step_x)
 
                     first_step, left_heel_previous, left_in_front, right_heel_previous = calculate_stride_to_left(
                         first_step, left_heel_previous, left_in_front, left_index_x, max_step_x, right_heel_previous,
@@ -205,8 +220,10 @@ def main(file, shoe_size = 0):
     cap.release()
     writer.release()
 
-    # print(left_stride_array)
-    # print(right_stride_array)
+    print("Left step array:", left_step_array, "Average:", sum(left_step_array) / len(left_step_array))
+    print("Right step array", right_step_array, "Average:", sum(right_step_array) / len(right_step_array))
+    print("Left stride array:", left_stride_array)
+    print("Right stride array:", right_stride_array)
 
 
 def pause_program():
