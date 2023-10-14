@@ -1,6 +1,6 @@
 import customtkinter
 from tkVideoPlayer import TkinterVideo
-from stride_estimator import main
+from stride_estimator import stride_estimator
 
 customtkinter.set_appearance_mode("dark")
 customtkinter.set_default_color_theme("dark-blue")
@@ -47,11 +47,18 @@ def browsefile():
         # get the shoe size
         shoe_size = popup_shoesize()
 
+        # loop if invalid input
+        # empty input, not numbers, negative numbers or 0
+        while (shoe_size == "" or shoe_size == None or
+               shoe_size.isdigit() is False or
+               (shoe_size.isdigit() is True and int(shoe_size) <= 0)):
+            shoe_size = popup_shoesize()
+
         ##call loading screen here
 
         # preprocess the vid
         print(filename, shoe_size)
-        main(filename, shoe_size)
+        stride_estimator(filename, shoe_size)
 
         ##remove loading screen here
 
