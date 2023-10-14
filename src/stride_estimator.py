@@ -32,8 +32,10 @@ def main(file, shoe_size = 0):
 
     left_step_array = []
     right_step_array = []
+    step_array = []
     left_stride_array = []
     right_stride_array = []
+    stride_array = []
 
     # For webcam input:
     # cap = cv2.VideoCapture(0)
@@ -94,6 +96,7 @@ def main(file, shoe_size = 0):
 
             # continue if landmark not detected
             if results.pose_landmarks is None:
+                writer.write(image) # still write the empty image
                 continue
 
 
@@ -179,11 +182,12 @@ def main(file, shoe_size = 0):
                         left_step_array.append(max_step_x)
                     else:
                         right_step_array.append(max_step_x)
+                    step_array.append(max_step_x)
 
 
                     first_step, left_heel_previous, left_in_front, right_heel_previous = calculate_stride_to_right(
                         first_step, left_heel_previous, left_in_front, left_index_x, max_step_x, right_heel_previous,
-                        right_index_x, left_stride_array, right_stride_array)
+                        right_index_x, left_stride_array, right_stride_array, stride_array)
 
                     max_step_x = 0
             # if walking to the left
@@ -194,10 +198,11 @@ def main(file, shoe_size = 0):
                         left_step_array.append(max_step_x)
                     else:
                         right_step_array.append(max_step_x)
+                    step_array.append(max_step_x)
 
                     first_step, left_heel_previous, left_in_front, right_heel_previous = calculate_stride_to_left(
                         first_step, left_heel_previous, left_in_front, left_index_x, max_step_x, right_heel_previous,
-                        right_index_x, left_stride_array, right_stride_array)
+                        right_index_x, left_stride_array, right_stride_array, stride_array)
 
                     max_step_x = 0
 
@@ -214,16 +219,20 @@ def main(file, shoe_size = 0):
             # if cv2.waitKey(5) & 0xFF == ord('q'):
             #     break
 
-            # pause the program
-            pause_program()
+            # pause the program (test stuff, remove after)
+            # pause_program()
 
     cap.release()
     writer.release()
 
     print("Left step array:", left_step_array, "Average:", sum(left_step_array) / len(left_step_array))
-    print("Right step array", right_step_array, "Average:", sum(right_step_array) / len(right_step_array))
+    print("Right step array:", right_step_array, "Average:", sum(right_step_array) / len(right_step_array))
+    print("Step array:", step_array, "Average:", sum(step_array) / len(step_array))
     print("Left stride array:", left_stride_array)
     print("Right stride array:", right_stride_array)
+    print("Stride array:", stride_array)
+
+    # put a return over here
 
 
 def pause_program():
@@ -287,7 +296,8 @@ def draw_on_video(image, left_stride, predicted_step_x, results, right_stride):
 
 
 def calculate_stride_to_left(first_step, left_heel_previous, left_in_front, left_index_x, max_step_x,
-                             right_heel_previous, right_index_x, left_stride_array, right_stride_array):
+                             right_heel_previous, right_index_x, left_stride_array, right_stride_array,
+                             stride_array):
     """
     Calculates the stride when walking to the left
 
@@ -313,7 +323,7 @@ def calculate_stride_to_left(first_step, left_heel_previous, left_in_front, left
         ####
         print(int(right_heel_previous + max_step_x), "left stride")
         left_stride_array.append(int(right_heel_previous + max_step_x))
-
+        stride_array.append(int(right_heel_previous + max_step_x))
         #time.sleep(2)
 
 
@@ -329,14 +339,18 @@ def calculate_stride_to_left(first_step, left_heel_previous, left_in_front, left
         ####
         print(int(left_heel_previous + max_step_x), "right stride")
         right_stride_array.append(int(left_heel_previous + max_step_x))
-
+        stride_array.append(int(left_heel_previous + max_step_x))
         #time.sleep(2)
+
+
+
 
     return first_step, left_heel_previous, left_in_front, right_heel_previous
 
 
 def calculate_stride_to_right(first_step, left_heel_previous, left_in_front, left_index_x, max_step_x,
-                              right_heel_previous, right_index_x, left_stride_array, right_stride_array):
+                              right_heel_previous, right_index_x, left_stride_array, right_stride_array,
+                              stride_array):
     """
     Calculates the stride when walking to the right
 
@@ -362,6 +376,7 @@ def calculate_stride_to_right(first_step, left_heel_previous, left_in_front, lef
         ####
         print(int(right_heel_previous + max_step_x), "left stride")
         left_stride_array.append(int(right_heel_previous + max_step_x))
+        stride_array.append(int(right_heel_previous + max_step_x))
 
         #time.sleep(2)
 
@@ -377,6 +392,7 @@ def calculate_stride_to_right(first_step, left_heel_previous, left_in_front, lef
         ####
         print(int(left_heel_previous + max_step_x), "right stride")
         right_stride_array.append(int(left_heel_previous + max_step_x))
+        stride_array.append(int(left_heel_previous + max_step_x))
 
         #time.sleep(2)
 
