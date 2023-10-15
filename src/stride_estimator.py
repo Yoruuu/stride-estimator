@@ -82,9 +82,9 @@ class stride_estimator:
             shoe_size = 23
 
 
-        with (mp_pose.Pose(
+        with mp_pose.Pose(
                 min_detection_confidence=0.5,
-                min_tracking_confidence=0.5) as pose):
+                min_tracking_confidence=0.5) as pose:
 
             while cap.isOpened():
                 success, image = cap.read()
@@ -246,6 +246,7 @@ class stride_estimator:
         print("Stride array:", self.stride_array)
 
         # put a return over here for step array and stride array
+        return self.step_array, self.stride_array
 
 
     def pause_program(self):
