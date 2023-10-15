@@ -9,8 +9,8 @@ customtkinter.set_default_color_theme("dark-blue")
 root = customtkinter.CTk()
 root.title("fyp")
 root.geometry("1920x1080")
-root.grid_columnconfigure(0, weight=3)
-root.grid_columnconfigure(1, weight=1)
+# root.grid_columnconfigure(0, weight=3)
+# root.grid_columnconfigure(1, weight=1)
 
 # side frame
 side_frame = customtkinter.CTkFrame(master=root)
@@ -49,9 +49,12 @@ def browsefile():
         # label = customtkinter.CTkLabel(video_frame, image = img)
         # label.pack(fill = "both", expand = "yes")
         # loading_image = customtkinter.CTkImage(Image.open(os.path.join(image_path, "CustomTkinter_logo_single.png")), size=(26, 26))
-        # loading_label = customtkinter.CTkLabel(master=video_frame, text="processing...")
+        # loading_label = customtkinter.CTkLabel(master=root, text="processing...")
         # # loading_label.pack(pady=12, padx=10)
-        # loading_label.place(relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
+        # loading_label.place(relx=0.0, rely=0.1, anchor="sw")
+        loading_label = customtkinter.CTkLabel(master=root, text="  Processing video frames...")
+        # loading_label.pack(pady=12, padx=10)
+        loading_label.place(relx=0.0, rely=1.0, anchor="sw")
 
         if len(filename) > 80:
             filename = filename[:80] + '\n' + filename[80:]
@@ -79,7 +82,7 @@ def browsefile():
         # time.sleep(10)
         se = stride_estimator(filename, shoe_size)
         
-        # loading_label.destroy()
+        loading_label.destroy()
 
         for i in range(len(se.step_array)):
             text = customtkinter.CTkLabel(master = step_scrollable_frame, text="step " + str(i+1) + ": " + str(se.step_array[i]) + "cm")
@@ -95,6 +98,8 @@ def browsefile():
 browsefile_button = customtkinter.CTkButton(video_frame, text="Browse Files", command=browsefile)
 browsefile_button.pack(pady=12, padx=10)
 # print("popopop")
+video.pack(expand=True, fill="both")
+video.config(background="#323536")
 
 def popup_shoesize():
 
@@ -114,7 +119,7 @@ def playvideo():
 
     # video = TkinterVideo(master=video_frame, scaled=True)
     video.load("res.mp4")
-    video.pack(expand=True, fill="both")
+    # video.pack(expand=True, fill="both")
     video.play()
     # video.bind('<<Ended>>', loopVideo)
     # video.config
