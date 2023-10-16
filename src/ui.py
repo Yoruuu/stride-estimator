@@ -1,6 +1,7 @@
 import customtkinter
 from PIL import ImageTk, Image
 from tkVideoPlayer import TkinterVideo
+import datetime
 from stride_estimator import stride_estimator
 
 customtkinter.set_appearance_mode("dark")
@@ -101,6 +102,91 @@ browsefile_button.pack(pady=12, padx=10)
 video.pack(expand=True, fill="both")
 video.config(background="#323536")
 
+
+def update_duration(event):
+    """ updates the duration after finding the duration """
+    duration = video.video_info()["duration"]
+    # end_time["text"] = str(datetime.timedelta(seconds=duration))
+    progress_slider["to"] = duration
+
+
+def update_scale(event):
+    """ updates the scale value """
+    progress_value.set(video.current_duration())
+
+
+# def load_video():
+#     """ loads the video """
+#     file_path = filedialog.askopenfilename()
+
+#     if file_path:
+#         video.load(file_path)
+
+#         progress_slider.config(to=0, from_=0)
+#         play_pause_btn["text"] = "Play"
+#         progress_value.set(0)
+
+
+def seek(value):
+    """ used to seek a specific timeframe """
+    video.seek(int(value))
+
+
+def skip(value: int):
+    """ skip seconds """
+    video.seek(int(progress_slider.get())+value)
+    # print(progress_value)
+    print(progress_value.get())
+    progress_value.set(progress_slider.get() + value)
+    # print(progress_value)
+    print(progress_value.get())
+
+
+# def play_pause():
+#     """ pauses and plays """
+#     if video.is_paused():
+#         video.play()
+#         play_pause_btn["text"] = "Pause"
+
+#     else:
+#         video.pause()
+#         play_pause_btn["text"] = "Play"
+
+
+def video_ended(event):
+    """ handle video ended """
+    progress_slider.set(progress_slider["to"])
+    # play_pause_btn["text"] = "Play"
+    progress_slider.set(0)
+
+
+skip_plus_5sec = customtkinter.CTkButton(video_frame, text="-5 sec", command=lambda: skip(-5))
+skip_plus_5sec.pack(side="left")
+
+start_time = customtkinter.CTkLabel(video_frame, text=str(datetime.timedelta(seconds=0)))
+start_time.pack(side="left")
+
+# progress_value = customtkinter.CTk
+progress_value = customtkinter.IntVar(video_frame)
+
+progress_slider = customtkinter.CTkSlider(video_frame, variable=progress_value, orientation="horizontal",from_=0, to=50, command=seek)
+# progress_slider.grid(row=0, column=1, rowspan=5, padx=(10, 10), pady=(10, 10), sticky="ns")
+        
+
+# progress_slider = tk.Scale(root, variable=progress_value, from_=0, to=0, orient="horizontal", command=seek)
+progress_slider.bind("<ButtonRelease-1>", seek)
+progress_slider.pack(side="left", fill="x", expand=True)
+
+# end_time = customtkinter.CTkLabel(video_frame, text=str(datetime.timedelta(seconds=0)))
+# end_time.pack(side="left")
+
+video.bind("<<Duration>>", update_duration)
+video.bind("<<SecondChanged>>", update_scale)
+video.bind("<<Ended>>", video_ended )
+
+skip_plus_5sec = customtkinter.CTkButton(video_frame, text="+5 sec", command=lambda: skip(5))
+skip_plus_5sec.pack(side="left")
+
 def popup_shoesize():
 
     shoesize_inputbox = customtkinter.CTkInputDialog(title="Shoe Size",
@@ -119,6 +205,9 @@ def playvideo():
 
     # video = TkinterVideo(master=video_frame, scaled=True)
     video.load("res.mp4")
+    progress_slider.configure(to=50, from_=0)
+#         play_pause_btn["text"] = "Play"
+    progress_value.set(0)
     # video.pack(expand=True, fill="both")
     video.play()
     # video.bind('<<Ended>>', loopVideo)
