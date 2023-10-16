@@ -66,7 +66,7 @@ def browsefile():
         #     video.bind('<<Loaded>>', stopvideo)
         #     video.load("vid1.mp4")
         # get the shoe size
-        shoe_size = popup_shoesize()
+        shoe_size = popup_shoesize("Please enter your shoe size in centimetres")
         # root.update()
 
         # loop if invalid input
@@ -74,7 +74,7 @@ def browsefile():
         while (shoe_size == "" or shoe_size == None or
                shoe_size.isdigit() is False or
                (shoe_size.isdigit() is True and int(shoe_size) <= 0)):
-            shoe_size = popup_shoesize()
+            shoe_size = popup_shoesize("Please enter your shoe size in centimetres\n\n(Incorrect input: Input should be a positive integer)")
 
         ##call loading screen here
 
@@ -187,10 +187,10 @@ video.bind("<<Ended>>", video_ended )
 skip_plus_5sec = customtkinter.CTkButton(video_frame, text="+5 sec", command=lambda: skip(5))
 skip_plus_5sec.pack(side="left")
 
-def popup_shoesize():
+def popup_shoesize(txt):
 
     shoesize_inputbox = customtkinter.CTkInputDialog(title="Shoe Size",
-                                                     text="Please enter your shoe size in centimetres")
+                                                     text=txt)
     # shoesize_inputbox.place(relx=0.5, rely=0.5, anchor='n')
     # print("Shoe Size:", shoesize_inputbox.get_input())
     res = shoesize_inputbox.get_input()
