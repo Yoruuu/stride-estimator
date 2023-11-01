@@ -8,6 +8,7 @@ import numpy as np
 import keyboard
 
 from mediapipe.framework.formats import landmark_pb2
+import matplotlib.pyplot as plt
 
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
@@ -50,14 +51,21 @@ class stride_estimator:
         right_stride_array = []
         self.stride_array = []
 
+        self.left = []
+        self.right = []
+        self.pos = []
+        i = 0
+
         # For webcam input:
         # cap = cv2.VideoCapture(0)
         # cap = cv2.VideoCapture("vid2.mp4")
 
         if file == "":
-            cap = cv2.VideoCapture("../data/11_110_1.mp4")
+            file = "../data/11_110_1.mp4"
+            cap = cv2.VideoCapture(file)
         else:
             cap = cv2.VideoCapture(file)
+
         # For Video input:
         prevTime = 0
 
@@ -123,6 +131,11 @@ class stride_estimator:
                 right_heel_y = results.pose_landmarks.landmark[30].y * IMG_HEIGHT
                 right_index_x = results.pose_landmarks.landmark[32].x * IMG_WIDTH
                 right_index_y = results.pose_landmarks.landmark[32].y * IMG_HEIGHT
+
+                self.left.append(left_heel_x)
+                self.right.append(right_heel_x)
+                self.pos.append(i)
+                i += 1
 
                 #print("leftheelx: ", left_heel_x, "rightheelx: ", right_heel_x)
 
@@ -238,16 +251,28 @@ class stride_estimator:
         cap.release()
         writer.release()
 
-        print("Left step array:", left_step_array, "Average:", sum(left_step_array) / len(left_step_array))
-        print("Right step array:", right_step_array, "Average:", sum(right_step_array) / len(right_step_array))
-        print("Step array:", self.step_array, "Average:", sum(self.step_array) / len(self.step_array))
-        print("Left stride array:", left_stride_array)
-        print("Right stride array:", right_stride_array)
-        print("Stride array:", self.stride_array)
+        # print("Left step array:", left_step_array, "Average:", sum(left_step_array) / len(left_step_array))
+        # print("Right step array:", right_step_array, "Average:", sum(right_step_array) / len(right_step_array))
+        # print("Step array:", self.step_array, "Average:", sum(self.step_array) / len(self.step_array))
+        # print("Left stride array:", left_stride_array)
+        # print("Right stride array:", right_stride_array)
+        # print("Stride array:", self.stride_array)
+
+        # for test report stuff, leave in comment during real implementation
+        # self.plot_heel_pos(file)
 
         # put a return over here for step array and stride array
         return self.step_array, self.stride_array
 
+    def plot_heel_pos(self, file):
+        plt.plot(self.pos, self.left, label="left heel")
+        plt.plot(self.pos, self.right, label="right heel")
+        plt.xlabel("Time (loops)")
+        plt.ylabel("X pos")
+        resStr = file.split("/")
+        plt.title(f"Coords of heels over time for {resStr[len(resStr) - 1]}")
+        plt.legend()
+        plt.show()
 
     def pause_program(self):
         """
@@ -442,9 +467,9 @@ class stride_estimator:
 
     def callibrate_shoe_pixels(self, left_feet_length_pixels, right_feet_length_pixels, shoe_pixel_calibrator):
         """
-        A function to callibrate the feet pixels through taking either average or the bigger of the two feets.
+        A function to calibrate the feet pixels through taking either average or the bigger of the two feets.
         Bigger is preferred because during tests, the model can misinterpret part of the shoe as the ground due to bad
-        lighting
+        lighting. This calibration also filters out outlier values and uses the average shoe pixel size instead.
 
         :param left_feet_length_pixels: float, the left feet length in pixels
         :param right_feet_length_pixels: float, the right feet length in pixels
@@ -485,5 +510,5 @@ class stride_estimator:
         return False
 
 if __name__ == "__main__":
-    se = stride_estimator("")
+    se = stride_estimator("../data/dslr/DSC_0500.MOV")
     pass
